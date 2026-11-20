@@ -14,7 +14,7 @@ from .config import load_config, ensure_config, prompt_config_interactive, valid
 
 def get_tunnel_password() -> str:
     env_pass = os.environ.get("TUNNEL_PASSWORD")
-    if env_pass:
+    if env_pass is not None:
         return env_pass.strip()
     try:
         pw = getpass.getpass("Tunnel Password: ")
