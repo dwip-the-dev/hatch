@@ -152,43 +152,23 @@ If your domain (e.g., `example.com`) uses Cloudflare nameservers:
 
 ---
 
-### Scenario B: External DNS / Free Dynamic DNS Providers (deSEC, Porkbun, Namecheap, DuckDNS)
+### Scenario B: External DNS & Free Dynamic DNS Providers (deSEC, Porkbun, Namecheap, DuckDNS)
 
-If your domain's nameservers are hosted externally (for example on **deSEC** `*.dedyn.io`, DuckDNS, or Namecheap), Cloudflare does not allow raw CNAME records pointing directly to `*.workers.dev` without custom hostname configuration (preventing Error 1014: CNAME Cross-User Ban).
+> **Important Cloudflare Architecture Constraint**: Unlike Cloudflare Pages (which supports external CNAME verification without Cloudflare nameservers), **Cloudflare Workers Custom Domains require the domain/subdomain to be an active Zone on your Cloudflare account**. A raw external CNAME in deSEC pointing directly to `*.workers.dev` will fail with an SSL handshake mismatch (error 552) because Cloudflare's edge does not hold an SSL certificate for external hostnames.
 
-To route external domains through Hatch for free:
+To use an external or dynamic domain like `dwip.dedyn.io` on the Cloudflare Free Plan:
 
-1. In the Cloudflare Dashboard, create a free zone or use **Cloudflare for SaaS (Custom Hostnames)** on an existing domain.
-2. In **SSL/TLS** → **Custom Hostnames**, add each slot subdomain (e.g., `temp1.yourdomain.dedyn.io`).
-3. Add the following records in your external DNS provider (e.g., deSEC control panel):
-
-#### CNAME Records Table
-| Host / Subname | Record Type | Target / Value | TTL |
-| :--- | :--- | :--- | :--- |
-| `temp1` | `CNAME` | `hatch-edge.<username>.workers.dev` | Automatic / 300 |
-| `temp2` | `CNAME` | `hatch-edge.<username>.workers.dev` | Automatic / 300 |
-| `temp3` | `CNAME` | `hatch-edge.<username>.workers.dev` | Automatic / 300 |
-| `temp4` | `CNAME` | `hatch-edge.<username>.workers.dev` | Automatic / 300 |
-| `temp5` | `CNAME` | `hatch-edge.<username>.workers.dev` | Automatic / 300 |
-
-#### Verification TXT Records Table
-| Host / Subname | Record Type | Target / Value | Purpose |
-| :--- | :--- | :--- | :--- |
-| `_cf-custom-hostname.temp1` | `TXT` | `<dcv-token-from-cloudflare>` | Hostname ownership verification |
-| `_acme-challenge.temp1` | `TXT` | `<acme-token-from-cloudflare>` | Automated SSL certificate issuance |
-
-#### Verification Commands
-Verify DNS propagation and SSL resolution:
-```bash
-# Verify CNAME target
-dig CNAME temp1.yourdomain.dedyn.io +short
-
-# Verify Cloudflare DCV verification TXT record
-dig TXT _cf-custom-hostname.temp1.yourdomain.dedyn.io +short
-
-# Test HTTPS handshake
-curl -I https://temp1.yourdomain.dedyn.io
-```
+1. **Add the Domain/Subdomain to Cloudflare as a Zone**:
+   - In Cloudflare Dashboard, click **Add a Domain / Add a Site** → enter your domain/subdomain (e.g. `dwip.dedyn.io`).
+   - Select the **Free Plan**.
+   - Cloudflare will scan DNS and provide you with two assigned Cloudflare nameservers (e.g., `aria.ns.cloudflare.com` and `noah.ns.cloudflare.com`).
+2. **Delegate Nameservers in your External Provider (deSEC)**:
+   - In your deSEC control panel, create `NS` records delegating `dwip.dedyn.io` to the two Cloudflare nameservers.
+   - Wait for Cloudflare to verify the delegation (status turns **Active**).
+3. **Attach Custom Domains to Hatch**:
+   - In Cloudflare Dashboard: **Workers & Pages** → `hatch-edge` → **Domains** (or **Settings** → **Domains & Routes**) → click **+ Add** → **Custom Domain**.
+   - Add `temp1.dwip.dedyn.io` through `temp5.dwip.dedyn.io`.
+   - Cloudflare will automatically create the proxied DNS records and issue free Universal SSL certificates.
 
 ---
 
