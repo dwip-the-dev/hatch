@@ -5,7 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
 [vars]
-ALLOWED_SLOTS = "temp1,temp2,temp3,temp4,temp5"
+ALLOWED_SLOTS = "*"
 
 [durable_objects]
 bindings = [

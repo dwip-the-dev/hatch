@@ -46,7 +46,7 @@ Public Visitor                   │                  ▼                       
 | **Hosting Infrastructure** | Serverless (Cloudflare Worker) | Proprietary Cloud | Cloudflare Edge Daemon |
 | **Monthly Cost** | **$0** (Free Cloudflare Tier) | Freemium ($8+/mo for custom domains) | Free |
 | **Custom Subdomains** | **Yes** (`temp1`–`temp5` or custom) | 1 ephemeral or static domain | Yes |
-| **Concurrent Tunnels** | **5+ multi-slot concurrent** | 1 tunnel | Unlimited |
+| **Concurrent Tunnels** | **Unlimited concurrent** (dynamic on-demand slots) | 1 tunnel | Unlimited |
 | **Double-NAT Traversal** | **Yes** (Outbound WebSocket) | Yes | Yes |
 | **Compute Cost While Idle** | **$0** (Durable Object Hibernation) | N/A | Daemon memory footprint |
 | **Data Privacy** | **100% User-Controlled** (Runs in your CF account) | Routed through ngrok servers | Routed through Cloudflare edge |
@@ -121,13 +121,8 @@ hatch/
    ```
    *Enter a strong password when prompted.*
 
-5. **(Optional) Customize Allowed Slots:**
-   By default, Hatch provisions 5 dynamic slots: `temp1,temp2,temp3,temp4,temp5`. To modify this, edit `ALLOWED_SLOTS` in `worker/wrangler.toml` and re-run `npx wrangler deploy`:
-   ```toml
-   [vars]
-   ALLOWED_SLOTS = "temp1,temp2,temp3,temp4,temp5,dev1,dev2,preview"
-   ```
-   *(To allow any dynamic subdomain name on demand, set `ALLOWED_SLOTS = "*"`).*
+5. **Dynamic Unlimited Concurrent Slots:**
+   Hatch defaults to wildcard dynamic slot mode (`ALLOWED_SLOTS = "*"`). You can spin up as many concurrent tunnels as you need (`temp1`, `temp2`, ... `tempN`) or claim custom named slots on demand (`hatch host 3000 --slot my-feature`). Each terminal automatically claims the next free slot with zero configuration.
 
 ---
 

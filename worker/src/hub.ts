@@ -85,15 +85,27 @@ export class TunnelHub extends DurableObject {
         }
         assignedSlot = requestedSlot;
       } else {
-        // Auto-assign first available slot
-        for (const slot of allowedSlots) {
-          if (slot !== "*" && !activeMap.has(slot)) {
-            assignedSlot = slot;
-            break;
+        // Auto-assign first available slot dynamically (temp1, temp2, temp3... unlimited)
+        if (isWildcard) {
+          let idx = 1;
+          while (activeMap.has(`temp${idx}`)) {
+            idx++;
           }
-        }
-        if (!assignedSlot) {
-          return renderFullPage(activeMap.size, allowedSlots.length);
+          assignedSlot = `temp${idx}`;
+        } else {
+          for (const slot of allowedSlots) {
+            if (slot !== "*" && !activeMap.has(slot)) {
+              assignedSlot = slot;
+              break;
+            }
+          }
+          if (!assignedSlot) {
+            let idx = 1;
+            while (activeMap.has(`temp${idx}`)) {
+              idx++;
+            }
+            assignedSlot = `temp${idx}`;
+          }
         }
       }
 
@@ -116,7 +128,7 @@ export class TunnelHub extends DurableObject {
         type: "assigned",
         slot: assignedSlot,
         activeCount: activeMap.size + 1,
-        maxSlots: allowedSlots.length
+        maxSlots: isWildcard ? -1 : allowedSlots.length
       };
       serverWs.send(JSON.stringify(assignMsg));
 
@@ -129,31 +141,56 @@ export class TunnelHub extends DurableObject {
     // 2. Control plane: Slot status & health check
     if (url.pathname === "/_tunnel/status") {
       const allowedSlots = this.getAllowedSlots();
+      const isWildcard = allowedSlots.includes("*");
       const activeMap = this.getActiveSockets();
-      const slotsInfo = allowedSlots.map((slot) => {
-        const ws = activeMap.get(slot);
+
+      const slotsInfo = [];
+      const seenSlots = new Set<string>();
+
+      // List all currently active slots
+      for (const [slot, ws] of activeMap.entries()) {
+        seenSlots.add(slot);
         let meta: SlotMetadata | null = null;
-        if (ws) {
-          try {
-            meta = ws.deserializeAttachment() as SlotMetadata;
-          } catch {
-            meta = null;
-          }
+        try {
+          meta = ws.deserializeAttachment() as SlotMetadata;
+        } catch {
+          meta = null;
         }
-        return {
+        slotsInfo.push({
           slot,
-          status: ws ? "LIVE" : "FREE",
+          status: "LIVE",
           connectedAt: meta?.connectedAt || null,
           hasLock: Boolean(meta?.lockHash),
           onlyPrefix: meta?.onlyPrefix || null
-        };
-      });
+        });
+      }
+
+      // Add base preview slots (e.g. temp1..temp5)
+      const basePool = isWildcard
+        ? ["temp1", "temp2", "temp3", "temp4", "temp5"]
+        : allowedSlots.filter((s) => s !== "*");
+
+      for (const slot of basePool) {
+        if (!seenSlots.has(slot)) {
+          seenSlots.add(slot);
+          slotsInfo.push({
+            slot,
+            status: "FREE",
+            connectedAt: null,
+            hasLock: false,
+            onlyPrefix: null
+          });
+        }
+      }
+
+      slotsInfo.sort((a, b) => a.slot.localeCompare(b.slot, undefined, { numeric: true }));
 
       return new Response(
         JSON.stringify(
           {
+            unlimited: isWildcard,
             activeCount: activeMap.size,
-            maxSlots: allowedSlots.length,
+            maxSlots: isWildcard ? -1 : allowedSlots.length,
             uptimeSeconds: Math.floor((Date.now() - this.startTime) / 1000),
             slots: slotsInfo
           },

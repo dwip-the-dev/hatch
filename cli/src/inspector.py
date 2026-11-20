@@ -50,12 +50,17 @@ class RequestInspector:
 
     def print_banner(self):
         sys.stdout.write("\033[2J\033[H")  # Clear screen and move to top
+        if self.max_slots in (-1, "unlimited") or (isinstance(self.max_slots, (int, float)) and self.max_slots < 0):
+            capacity_str = f"Slot {self.slot} · {self.active_count} active · Unlimited concurrent"
+        else:
+            capacity_str = f"Slot {self.slot} · {self.active_count}/{self.max_slots} active"
+
         banner = (
             f"\n\033[1;32m● LIVE\033[0m  "
             f"\033[1;36m{self.public_url}\033[0m  "
             f"\033[1;30m--->\033[0m  "
             f"\033[1;33mhttp://127.0.0.1:{self.local_port}\033[0m  "
-            f"\033[90m(Slot {self.slot} · {self.active_count}/{self.max_slots} active)\033[0m\n"
+            f"\033[90m({capacity_str})\033[0m\n"
             f"\033[90mHotkeys: [r] Replay last request | [l] List recent requests | [Ctrl+C] Disconnect\033[0m\n"
             f"\033[90m{'─' * 76}\033[0m\n"
         )

@@ -127,7 +127,7 @@ export default {
         const segments = url.pathname.split("/").filter(Boolean);
         if (segments.length > 0) {
           const firstSegment = segments[0];
-          if (allowedSlots.includes(firstSegment)) {
+          if (allowedSlots.includes("*") || allowedSlots.includes(firstSegment) || firstSegment.startsWith("temp")) {
             targetSlot = firstSegment;
             forwardPath = "/" + segments.slice(1).join("/");
             if (forwardPath === "") forwardPath = "/";

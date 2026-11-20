@@ -49,9 +49,11 @@ def cmd_status():
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode("utf-8"))
 
+            is_unlimited = data.get("unlimited") or data.get("maxSlots") in (-1, "unlimited")
+            cap_str = "Unlimited" if is_unlimited else data.get("maxSlots", 0)
             print(f"\n\033[1;36m=== Hatch Edge Status ===\033[0m")
             print(f"Worker: \033[33m{worker_url}\033[0m")
-            print(f"Active Tunnels: \033[1;32m{data.get('activeCount', 0)}\033[0m / {data.get('maxSlots', 0)}")
+            print(f"Active Tunnels: \033[1;32m{data.get('activeCount', 0)}\033[0m (Capacity: {cap_str})")
             print(f"Uptime: {data.get('uptimeSeconds', 0)}s\n")
 
             print(f"{'SLOT':<12} {'STATE':<10} {'PROTECTION':<14} {'PATH FILTER':<14}")
@@ -119,7 +121,9 @@ def cmd_doctor():
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-            print(f"      \033[32m✔ Authenticated successfully!\033[0m Available slots: {data.get('maxSlots', 0)}")
+            is_unlimited = data.get("unlimited") or data.get("maxSlots") in (-1, "unlimited")
+            cap_str = "Unlimited" if is_unlimited else data.get("maxSlots", 0)
+            print(f"      \033[32m✔ Authenticated successfully!\033[0m Slot capacity: {cap_str}")
     except urllib.error.HTTPError as e:
         if e.code == 401:
             print("      \033[31m✘ Authentication Failed: Invalid TUNNEL_PASSWORD configured in Worker secret.\033[0m")
