@@ -1,0 +1,16 @@
+name = "hatch-edge"
+main = "src/index.ts"
+compatibility_date = "2024-11-12"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ALLOWED_SLOTS = "temp1,temp2,temp3,temp4,temp5"
+
+[durable_objects]
+bindings = [
+  { name = "TUNNEL_HUB", class_name = "TunnelHub" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TunnelHub"]

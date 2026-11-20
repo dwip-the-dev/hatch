@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -e
+
+# Resolve script directory (dereferencing symlinks)
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+REPO_CLI_DIR="$( cd -P "$SCRIPT_DIR/.." >/dev/null 2>&1 && pwd )"
+
+# Determine Python runtime
+VENV_PYTHON="$HOME/.local/share/hatch/venv/bin/python3"
+LOCAL_VENV_PYTHON="$REPO_CLI_DIR/../.venv/bin/python3"
+
+if [ -f "$VENV_PYTHON" ]; then
+  PYTHON_BIN="$VENV_PYTHON"
+elif [ -f "$LOCAL_VENV_PYTHON" ]; then
+  PYTHON_BIN="$LOCAL_VENV_PYTHON"
+elif command -v python3 >/dev/null 2>&1; then
+  PYTHON_BIN="python3"
+else
+  echo "[!] Python 3 is required to run Hatch. Please install python3." >&2
+  exit 1
+fi
+
+export PYTHONPATH="$REPO_CLI_DIR:$PYTHONPATH"
+exec "$PYTHON_BIN" -m src.cli "$@"
